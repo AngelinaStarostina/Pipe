@@ -1,8 +1,9 @@
 #include <windows.h>
 #include <iostream>
+#include <time.h>
 using namespace std;
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	HANDLE hWritePipe, hReadPipe;
 	HANDLE hEnableRead;
@@ -27,34 +28,75 @@ int main(int argc, char *argv[])
 		return GetLastError();
 	}
 	cout << "The number " << n << " is read from the pipe" << endl;
+	char* arr = new char[n];
 	for (int i = 0; i < n; i++)
 	{
-		int nData;
 		DWORD dwBytesRead;
-		if (!ReadFile(hReadPipe, &nData, sizeof(nData), &dwBytesRead, NULL))
+		if (!ReadFile(hReadPipe, &arr[i], sizeof(arr[i]), &dwBytesRead, NULL))
 		{
 			cout << "Read from the pipe failed.\n";
 			return GetLastError();
 		}
-		cout << "The number " << nData << " is read from the pipe" << endl;
+		cout << "The number " << arr[i] << " is read from the pipe" << endl;
 	}
+	cout << endl;
+
+
+	int count;
+	do {
+		cout << "Enter the number of elements:  ";
+		cin >> count;
+	} while (n < count);
+
+
+	int count2 = count;
+
+	srand(time(NULL));
+	while (count != NULL)
+	{
+		int i = rand() % (n - 1);
+		if (arr[i] == NULL)
+		{
+			count2--;
+		}
+		arr[i] = NULL;
+		cout << "i = " << i << endl;
+		count--;
+
+	}
+
+	int n2 = n - count2;
+
+	DWORD dwBytesWritten;
+	if (!WriteFile(hWritePipe, &n2, sizeof(n2), &dwBytesWritten, NULL))
+	{
+		cout << "Write n to file failed.\n";
+		return GetLastError();
+	}
+	cout << n2 << "is written to the pipe.\n";
 
 	for (int j = 0; j < n; j++)
 	{
 		DWORD dwBytesWritten;
-		if (!WriteFile(hWritePipe, &j, sizeof(j), &dwBytesWritten, NULL))
+		if (arr[j] != NULL)
 		{
-			cout << "Write to file failed.\n";
-			return GetLastError();
+			if (!WriteFile(hWritePipe, &arr[j], sizeof(arr[j]), &dwBytesWritten, NULL))
+			{
+				cout << "Write to file failed.\n";
+				return GetLastError();
+			}
+			cout << arr[j] << "is written to the pipe.\n";
 		}
+
 	}
 
 	SetEvent(hEnableRead);
+
+
 	CloseHandle(hWritePipe);
 	CloseHandle(hReadPipe);
 	CloseHandle(hEnableRead2);
 	CloseHandle(hEnableRead);
-
 	system("pause");
 	return 0;
 }

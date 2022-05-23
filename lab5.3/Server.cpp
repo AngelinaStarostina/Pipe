@@ -1,27 +1,27 @@
 #include <windows.h>
 #include <iostream>
+#include <conio.h>
 using namespace std;
 
 int main()
 {
-	char lpszComLine[80]; 
-	HANDLE hEnableRead; 
+	char lpszComLine[80];
+	HANDLE hEnableRead;
 	char lpszEnableRead[] = "EnableRead";
 	HANDLE hEnableRead2;
 	char lpszEnableRead2[] = "EnableRead2";
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
-	HANDLE hWritePipe, hReadPipe;
+	HANDLE hWritePipe;
+	HANDLE hReadPipe;
 	SECURITY_ATTRIBUTES sa;
 
 	hEnableRead = CreateEvent(NULL, FALSE, FALSE, lpszEnableRead);
 	hEnableRead2 = CreateEvent(NULL, FALSE, FALSE, lpszEnableRead2);
 
-
 	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-	sa.lpSecurityDescriptor = NULL; 
-	sa.bInheritHandle = TRUE; 
-
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = TRUE;
 	if (!CreatePipe(&hReadPipe, &hWritePipe, &sa, 0))
 	{
 		cout << "Create pipe failed.\n";
@@ -30,7 +30,7 @@ int main()
 
 
 	int n;
-	char* arr;
+	char* arr;
 	cout << "Enter the number of elements: ";
 	cin >> n;
 	arr = new char[n];
@@ -59,7 +59,7 @@ int main()
 		cout << "Write to file failed.\n";
 		return GetLastError();
 	}
-
+	cout << n << "is written to the pipe.\n";
 	for (int j = 0; j < n; j++)
 	{
 		DWORD dwBytesRead;
@@ -68,31 +68,41 @@ int main()
 			cout << "Write to file failed.\n";
 			return GetLastError();
 		}
+		cout << arr[j] << "is written to the pipe.\n";
 	}
+	cout << endl;
 
 	SetEvent(hEnableRead2);
 
 
 	WaitForSingleObject(hEnableRead, INFINITE);
 
+	DWORD dwBytesRead;
+	if (!ReadFile(hReadPipe, &n, sizeof(n), &dwBytesRead, NULL))
+	{
+		cout << "Read from the pipe failed.\n";
+		return GetLastError();
+	}
+	cout << n << " is read from the pipe" << endl;
+
 	for (int j = 0; j < n; j++)
 	{
-		int nData;
+		char nData;
 		DWORD dwBytesRead;
+
 		if (!ReadFile(hReadPipe, &nData, sizeof(nData), &dwBytesRead, NULL))
 		{
 			cout << "Read from the pipe failed.\n";
 			return GetLastError();
 		}
-		
-		cout << "The number " << nData << " is read from the pipe" << endl;
+
+		cout << nData << " is read from the pipe" << endl;
 	}
 
-	WaitForSingleObject(&pi, INFINITE);
-
-	CloseHandle(hReadPipe);
 	CloseHandle(hWritePipe);
-	CloseHandle(hEnableRead);
+	CloseHandle(hReadPipe);
 	CloseHandle(hEnableRead2);
+	CloseHandle(hEnableRead);
+
 	return 0;
 }
